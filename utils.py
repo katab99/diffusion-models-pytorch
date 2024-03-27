@@ -1,10 +1,12 @@
 import os
 import torch
 import torchvision
+import torchaudio
+from torchaudio.transforms import Resample, Spectrogram,TimeStretch, FrequencyMasking, TimeMasking, MelScale
 from PIL import Image
 from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
-
+from dataset import AudioDataset
 
 def plot_images(images):
     plt.figure(figsize=(32, 32))
@@ -22,13 +24,21 @@ def save_images(images, path, **kwargs):
 
 
 def get_data(args):
-    transforms = torchvision.transforms.Compose([
-        torchvision.transforms.Resize(80),  # args.image_size + 1/4 *args.image_size
-        torchvision.transforms.RandomResizedCrop(args.image_size, scale=(0.8, 1.0)),
-        torchvision.transforms.ToTensor(),
-        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ])
-    dataset = torchvision.datasets.ImageFolder(args.dataset_path, transform=transforms)
+    resample_freq = 22_100
+    n_fft = 1024
+
+    transforms = torch.nn.Sequential(
+        Resample(orig_freq=22100, new_freq=resample_freq), # resample to 16kHz - TODO: check if this is necessary
+        Spectrogram(n_fft=n_fft), # compute spectrogram
+        # torch.nn.Sequential(
+        #     TimeStretch(0.8, fixed_rate=True),
+        #     FrequencyMasking(freq_mask_param=80),
+        #     TimeMasking(time_mask_param=80),
+        #     ), # augmentation
+        MelScale(n_mels=128, sample_rate=resample_freq, n_stft=n_fft // 2 + 1), # convert to mel scale
+        )
+    
+    dataset = AudioDataset(args.dataset_path, transform=transforms)
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
     return dataloader
 

@@ -3,7 +3,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
 class EMA:
     def __init__(self, beta):
         super().__init__()
@@ -130,6 +129,8 @@ class UNet(nn.Module):
         super().__init__()
         self.device = device
         self.time_dim = time_dim
+
+        # -- Encoder
         self.inc = DoubleConv(c_in, 64)
         self.down1 = Down(64, 128)
         self.sa1 = SelfAttention(128, 32)
@@ -137,11 +138,13 @@ class UNet(nn.Module):
         self.sa2 = SelfAttention(256, 16)
         self.down3 = Down(256, 256)
         self.sa3 = SelfAttention(256, 8)
-
+        
+        # -- Bottleneck
         self.bot1 = DoubleConv(256, 512)
         self.bot2 = DoubleConv(512, 512)
         self.bot3 = DoubleConv(512, 256)
 
+        # -- Decoder
         self.up1 = Up(512, 128)
         self.sa4 = SelfAttention(128, 16)
         self.up2 = Up(256, 64)

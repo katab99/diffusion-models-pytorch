@@ -1,0 +1,5 @@
+__pycache__
+data/
+melspec_notebook.ipynb
+convert_wav2mel.py
+test_notebook.ipynb
